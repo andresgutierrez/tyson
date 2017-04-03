@@ -40,6 +40,11 @@ class Parser
         $this->sym = $this->tokenizer->getNextToken();
     }
 
+    private function discard()
+    {
+        $this->sym = $this->tokenizer->discard();
+    }
+
     private function literal()
     {
         if ($this->accept(Tokens::T_NUMBER)) {
@@ -73,40 +78,32 @@ class Parser
         throw new \Exception("expression: syntax error, unexpected token: " . $this->sym[1]);
     }
 
-    private function classItem()
+    private function acceptProperty()
     {
         if ($this->accept(Tokens::T_PRIVATE)) {
-
             if ($this->accept(Tokens::T_IDENTIFIER)) {
                 if ($this->accept(Tokens::T_EQUALS)) {
                     $this->expect(Tokens::T_NUMBER);
                 }
                 $this->expect(Tokens::T_SEMICOLON);
-                return;
+                return true;
             }
 
-            if ($this->accept(Tokens::T_FUNCTION)) {
-                return;
-            }
-
-            throw new \Exception("class-item: syntax error, unexpected token: " . $this->sym[1]);
+            $this->discard();
+            return false;
         }
 
         if ($this->accept(Tokens::T_PROTECTED)) {
-
             if ($this->accept(Tokens::T_IDENTIFIER)) {
                 if ($this->accept(Tokens::T_EQUALS)) {
                     $this->expect(Tokens::T_NUMBER);
                 }
                 $this->expect(Tokens::T_SEMICOLON);
-                return;
+                return true;
             }
 
-            if ($this->accept(Tokens::T_FUNCTION)) {
-                return;
-            }
-
-            throw new \Exception("class-item: syntax error, unexpected token: " . $this->sym[1]);
+            $this->discard();
+            return false;
         }
 
         if ($this->accept(Tokens::T_PUBLIC)) {
@@ -116,9 +113,19 @@ class Parser
                     $this->expect(Tokens::T_NUMBER);
                 }
                 $this->expect(Tokens::T_SEMICOLON);
-                return;
+                return true;
             }
 
+            $this->discard();
+            return false;
+        }
+
+        return false;
+    }
+
+    private function acceptMethod()
+    {
+        if ($this->accept(Tokens::T_PRIVATE)) {
             if ($this->accept(Tokens::T_FUNCTION)) {
                 $this->expect(Tokens::T_IDENTIFIER);
                 $this->expect(Tokens::T_LPAREN);
@@ -126,29 +133,84 @@ class Parser
                 $this->expect(Tokens::T_LBRACKET);
                 $this->expression();
                 $this->expect(Tokens::T_RBRACKET);
-                return;
+                return true;
             }
+            return false;
+        }
 
-            throw new \Exception("class-item: syntax error, unexpected token: " . $this->sym[1]);
+        if ($this->accept(Tokens::T_PROTECTED)) {
+            if ($this->accept(Tokens::T_FUNCTION)) {
+                $this->expect(Tokens::T_IDENTIFIER);
+                $this->expect(Tokens::T_LPAREN);
+                $this->expect(Tokens::T_RPAREN);
+                $this->expect(Tokens::T_LBRACKET);
+                $this->expression();
+                $this->expect(Tokens::T_RBRACKET);
+                return true;
+            }
+            return false;
+        }
+
+        if ($this->accept(Tokens::T_PUBLIC)) {
+            if ($this->accept(Tokens::T_FUNCTION)) {
+                $this->expect(Tokens::T_IDENTIFIER);
+                $this->expect(Tokens::T_LPAREN);
+                $this->expect(Tokens::T_RPAREN);
+                $this->expect(Tokens::T_LBRACKET);
+                $this->expression();
+                $this->expect(Tokens::T_RBRACKET);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function acceptClassItem()
+    {
+        if ($this->acceptProperty()) {
+            return;
+        }
+
+        if ($this->acceptMethod()) {
+            return;
         }
 
         throw new \Exception("class-item: syntax error, unexpected token: " . $this->sym[1]);
     }
 
-    private function main()
+    private function acceptNamespace()
     {
         if ($this->accept(Tokens::T_NAMESPACE)) {
             $this->expect(Tokens::T_IDENTIFIER);
             $this->expect(Tokens::T_SEMICOLON);
-            return;
+            return true;
         }
 
+        return false;
+    }
+
+    private function acceptClass()
+    {
         if ($this->accept(Tokens::T_CLASS)) {
             $this->expect(Tokens::T_IDENTIFIER);
             $this->expect(Tokens::T_LBRACKET);
             while (!$this->current(Tokens::T_RBRACKET))
-                $this->classItem();
+                $this->acceptClassItem();
             $this->expect(Tokens::T_RBRACKET);
+            return true;
+        }
+
+        return false;
+    }
+
+    private function main()
+    {
+        if ($this->acceptNamespace()) {
+            return;
+        }
+
+        if ($this->acceptClass()) {
             return;
         }
 

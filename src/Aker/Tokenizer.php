@@ -59,12 +59,18 @@ class Tokenizer
 
     private function getPosition($text, $offset)
     {
-    $text = substr($text, 0, $offset);
-    return array(substr_count($text, "\n") + 1, $offset - strrpos("\n" . $text, "\n") + 1);
+        $text = substr($text, 0, $offset);
+        return array(substr_count($text, "\n") + 1, $offset - strrpos("\n" . $text, "\n") + 1);
     }
 
     public function getNextToken()
     {
         return $this->tokens[$this->position++];
+    }
+
+    public function discard()
+    {
+        $this->position--;
+        return $this->tokens[$this->position - 1];
     }
 }
