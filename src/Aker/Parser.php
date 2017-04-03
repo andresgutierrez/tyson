@@ -40,6 +40,39 @@ class Parser
         $this->sym = $this->tokenizer->getNextToken();
     }
 
+    private function literal()
+    {
+        if ($this->accept(Tokens::T_NUMBER)) {
+            return true;
+        }
+
+        if ($this->accept(Tokens::T_TRUE)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function expression()
+    {
+        if ($this->literal()) {
+            if ($this->accept(Tokens::T_ADD)) {
+                $this->expression();
+                return;
+            }
+
+            if ($this->accept(Tokens::T_SUBTRACT)) {
+                $this->expression();
+                return;
+            }
+
+            $this->expect(Tokens::T_SEMICOLON);
+            return;
+        }
+
+        throw new \Exception("expression: syntax error, unexpected token: " . $this->sym[1]);
+    }
+
     private function classItem()
     {
         if ($this->accept(Tokens::T_PRIVATE)) {
@@ -90,7 +123,8 @@ class Parser
                 $this->expect(Tokens::T_IDENTIFIER);
                 $this->expect(Tokens::T_LPAREN);
                 $this->expect(Tokens::T_RPAREN);
-                $this->expect(Tokens::T_LBRACKET);                         
+                $this->expect(Tokens::T_LBRACKET);
+                $this->expression();
                 $this->expect(Tokens::T_RBRACKET);
                 return;
             }

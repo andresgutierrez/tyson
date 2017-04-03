@@ -19,5 +19,10 @@ class Tokens
     const T_FUNCTION = 12;
     const T_LPAREN = 13;
     const T_RPAREN = 14;
+    const T_TRUE = 15;
+    const T_FALSE = 16;
+    const T_NULL = 17;
+    const T_ADD = 18;
+    const T_SUBTRACT = 19;
     const T_EOF = 100;
 }

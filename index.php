@@ -11,12 +11,15 @@ use Aker\Tokenizer;
 $rules = [
     Tokens::T_NUMBER     => '\d+',
     Tokens::T_WHITESPACE => '\s+',
-    Tokens::T_CLASS      => 'CLASS|class',
-    Tokens::T_NAMESPACE  => 'NAMESPACE|namespace',
-    Tokens::T_PRIVATE    => 'PRIVATE|private',
-    Tokens::T_PROTECTED  => 'PROTECTED|protected',
-    Tokens::T_PUBLIC     => 'PUBLIC|public',
-    Tokens::T_FUNCTION   => 'FUNCTION|function',
+    Tokens::T_CLASS      => 'class',
+    Tokens::T_NAMESPACE  => 'namespace',
+    Tokens::T_PRIVATE    => 'private',
+    Tokens::T_PROTECTED  => 'protected',
+    Tokens::T_PUBLIC     => 'public',
+    Tokens::T_FUNCTION   => 'function',
+    Tokens::T_TRUE       => 'true',
+    Tokens::T_FALSE      => 'false',
+    Tokens::T_NULL       => 'null',
     Tokens::T_IDENTIFIER => "[\_a-zA-Z][\_a-zA-Z0-9]*",
     Tokens::T_SEMICOLON  => ";",
     Tokens::T_LBRACKET   => "{",
@@ -24,6 +27,8 @@ $rules = [
     Tokens::T_EQUALS     => "=",
     Tokens::T_LPAREN     => '\(',
     Tokens::T_RPAREN     => '\)',
+    Tokens::T_ADD        => '\+',
+    Tokens::T_SUBTRACT   => '\-',
 ];
 
 $program = "
@@ -38,7 +43,10 @@ class Y
 
     private X;
 
-    public function __construct() { }
+    public function __construct()
+    {
+        2 + 3 + 1;
+    }
 }
 
 ";
