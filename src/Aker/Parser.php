@@ -6,7 +6,7 @@ class Parser
 {
     private $sym;
 
-    private $tokenizer;    
+    private $tokenizer;
 
     public function __construct(Tokenizer $tokenizer)
     {
@@ -72,8 +72,10 @@ class Parser
 
         if ($this->accept(Tokens::T_SUBTRACT)) {
             $right = $this->expression();
-            return ['type' => 'add', 'left' => $left, 'right' => $right];
+            return ['type' => 'sub', 'left' => $left, 'right' => $right];
         }
+
+        return $left;
     }
 
     private function expression()
@@ -86,13 +88,11 @@ class Parser
         if ($this->accept(Tokens::T_LPAREN)) {
             $left = $this->expression();
             $this->expect(Tokens::T_RPAREN);
-            $this->binaryExpression($left);
-            return $left;
+            return $this->binaryExpression($left);
         }
 
         if ($literal = $this->literal()) {
-            $this->binaryExpression($literal);
-            return $literal;
+            return $this->binaryExpression($literal);
         }
 
         throw new \Exception("expression: syntax error, unexpected token: " . $this->sym[1]);
