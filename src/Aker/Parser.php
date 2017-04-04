@@ -6,7 +6,7 @@ class Parser
 {
     private $sym;
 
-    private $tokenizer;
+    private $tokenizer;    
 
     public function __construct(Tokenizer $tokenizer)
     {
@@ -16,16 +16,17 @@ class Parser
     private function accept($symbol)
     {
         if ($this->sym[0] === $symbol) {
+            $current = $this->sym;
             $this->nextsym();
-            return true;
+            return $current;
         }
         return false;
     }
 
     private function expect($symbol)
     {
-        if ($this->accept($symbol)) {
-            return true;
+        if ($current = $this->accept($symbol)) {
+            return $current;
         }
         throw new \Exception("expect: unexpected symbol " . $symbol);
     }
@@ -40,43 +41,58 @@ class Parser
         $this->sym = $this->tokenizer->getNextToken();
     }
 
-    private function discard()
+    private function backtrack()
     {
         $this->sym = $this->tokenizer->discard();
     }
 
     private function literal()
     {
-        if ($this->accept(Tokens::T_NUMBER)) {
-            return true;
+        if ($expr = $this->accept(Tokens::T_NUMBER)) {
+            return $expr;
         }
 
-        if ($this->accept(Tokens::T_TRUE)) {
-            return true;
+        if ($expr = $this->accept(Tokens::T_TRUE)) {
+            return $expr;
+        }
+
+        if ($expr = $this->accept(Tokens::T_FALSE)) {
+            return $expr;
         }
 
         return false;
     }
 
-    private function expression()
+    private function binaryExpression($left)
     {
-        if ($this->accept(Tokens::T_LPAREN)) {
-            $this->expression();
-            $this->expect(Tokens::T_RPAREN);
-            return;
+        if ($this->accept(Tokens::T_ADD)) {
+            $right = $this->expression();
+            return ['type' => 'add', 'left' => $left, 'right' => $right];
         }
 
-        if ($this->literal()) {
-            if ($this->accept(Tokens::T_ADD)) {
-                $this->expression();
-                return;
-            }
+        if ($this->accept(Tokens::T_SUBTRACT)) {
+            $right = $this->expression();
+            return ['type' => 'add', 'left' => $left, 'right' => $right];
+        }
+    }
 
-            if ($this->accept(Tokens::T_SUBTRACT)) {
-                $this->expression();
-                return;
-            }
-            return;
+    private function expression()
+    {
+        if ($this->accept(Tokens::T_SUBTRACT)) {
+            $right = $this->expression();
+            return ['type' => 'minus', 'right' => $right];
+        }
+
+        if ($this->accept(Tokens::T_LPAREN)) {
+            $left = $this->expression();
+            $this->expect(Tokens::T_RPAREN);
+            $this->binaryExpression($left);
+            return $left;
+        }
+
+        if ($literal = $this->literal()) {
+            $this->binaryExpression($literal);
+            return $literal;
         }
 
         throw new \Exception("expression: syntax error, unexpected token: " . $this->sym[1]);
@@ -84,8 +100,9 @@ class Parser
 
     private function expressionStatement()
     {
-        $this->expression();
+        $expression = $this->expression();
         $this->expect(Tokens::T_SEMICOLON);
+        return ['type' => 'expr', 'expr' => $expression];
     }
 
     private function acceptProperty()
@@ -99,7 +116,7 @@ class Parser
                 return true;
             }
 
-            $this->discard();
+            $this->backtrack();
             return false;
         }
 
@@ -112,7 +129,7 @@ class Parser
                 return true;
             }
 
-            $this->discard();
+            $this->backtrack();
             return false;
         }
 
@@ -126,7 +143,7 @@ class Parser
                 return true;
             }
 
-            $this->discard();
+            $this->backtrack();
             return false;
         }
 
@@ -137,39 +154,39 @@ class Parser
     {
         if ($this->accept(Tokens::T_PRIVATE)) {
             if ($this->accept(Tokens::T_FUNCTION)) {
-                $this->expect(Tokens::T_IDENTIFIER);
+                $name = $this->expect(Tokens::T_IDENTIFIER);
                 $this->expect(Tokens::T_LPAREN);
                 $this->expect(Tokens::T_RPAREN);
                 $this->expect(Tokens::T_LBRACKET);
-                $this->expressionStatement();
+                $expr = $this->expressionStatement();
                 $this->expect(Tokens::T_RBRACKET);
-                return true;
+                return ['type' => 'method', 'name' => $name, 'statements' => $expr];
             }
             return false;
         }
 
         if ($this->accept(Tokens::T_PROTECTED)) {
             if ($this->accept(Tokens::T_FUNCTION)) {
-                $this->expect(Tokens::T_IDENTIFIER);
+                $name = $this->expect(Tokens::T_IDENTIFIER);
                 $this->expect(Tokens::T_LPAREN);
                 $this->expect(Tokens::T_RPAREN);
                 $this->expect(Tokens::T_LBRACKET);
-                $this->expressionStatement();
+                $expr = $this->expressionStatement();
                 $this->expect(Tokens::T_RBRACKET);
-                return true;
+                return ['type' => 'method', 'name' => $name, 'statements' => $expr];
             }
             return false;
         }
 
         if ($this->accept(Tokens::T_PUBLIC)) {
             if ($this->accept(Tokens::T_FUNCTION)) {
-                $this->expect(Tokens::T_IDENTIFIER);
+                $name = $this->expect(Tokens::T_IDENTIFIER);
                 $this->expect(Tokens::T_LPAREN);
                 $this->expect(Tokens::T_RPAREN);
                 $this->expect(Tokens::T_LBRACKET);
-                $this->expressionStatement();
+                $expr = $this->expressionStatement();
                 $this->expect(Tokens::T_RBRACKET);
-                return true;
+                return ['type' => 'method', 'name' => $name, 'statements' => $expr];
             }
         }
 
@@ -178,12 +195,12 @@ class Parser
 
     private function acceptClassItem()
     {
-        if ($this->acceptProperty()) {
-            return;
+        if ($property = $this->acceptProperty()) {
+            return $property;
         }
 
-        if ($this->acceptMethod()) {
-            return;
+        if ($method = $this->acceptMethod()) {
+            return $method;
         }
 
         throw new \Exception("class-item: syntax error, unexpected token: " . $this->sym[1]);
@@ -192,9 +209,9 @@ class Parser
     private function acceptNamespace()
     {
         if ($this->accept(Tokens::T_NAMESPACE)) {
-            $this->expect(Tokens::T_IDENTIFIER);
+            $name = $this->expect(Tokens::T_IDENTIFIER);
             $this->expect(Tokens::T_SEMICOLON);
-            return true;
+            return ['type' => 'namespace', 'name' => $name];
         }
 
         return false;
@@ -203,12 +220,16 @@ class Parser
     private function acceptClass()
     {
         if ($this->accept(Tokens::T_CLASS)) {
-            $this->expect(Tokens::T_IDENTIFIER);
+            $name = $this->expect(Tokens::T_IDENTIFIER);
             $this->expect(Tokens::T_LBRACKET);
+
+            $items = [];
             while (!$this->current(Tokens::T_RBRACKET))
-                $this->acceptClassItem();
+                $items[] = $this->acceptClassItem();
+
             $this->expect(Tokens::T_RBRACKET);
-            return true;
+
+            return ['type' => 'class', 'name' => $name, 'items' => $items];
         }
 
         return false;
@@ -216,12 +237,12 @@ class Parser
 
     private function main()
     {
-        if ($this->acceptNamespace()) {
-            return;
+        if ($namespace = $this->acceptNamespace()) {
+            return $namespace;
         }
 
-        if ($this->acceptClass()) {
-            return;
+        if ($class = $this->acceptClass()) {
+            return $class;
         }
 
         throw new \Exception("main: syntax error " . print_r($this->sym, true));
@@ -230,9 +251,12 @@ class Parser
     public function parse()
     {
         $this->nextsym();
-        while (!$this->current(Tokens::T_EOF))
-            $this->main();
 
+        $items = [];
+        while (!$this->current(Tokens::T_EOF))
+            $items[] = $this->main();
+
+        print_r($items);
         return true;
     }
 }
