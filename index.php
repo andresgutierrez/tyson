@@ -45,7 +45,7 @@ class Y
 
     public function __construct()
     {
-        2 + 3 + 1;
+        (2 + 3);
     }
 }
 

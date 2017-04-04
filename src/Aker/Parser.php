@@ -13,26 +13,26 @@ class Parser
         $this->tokenizer = $tokenizer;
     }
 
-    private function accept($s)
+    private function accept($symbol)
     {
-        if ($this->sym[0] === $s) {
+        if ($this->sym[0] === $symbol) {
             $this->nextsym();
             return true;
         }
         return false;
     }
 
-    private function expect($s)
+    private function expect($symbol)
     {
-        if ($this->accept($s)) {
+        if ($this->accept($symbol)) {
             return true;
         }
-        throw new \Exception("expect: unexpected symbol " . $s);
+        throw new \Exception("expect: unexpected symbol " . $symbol);
     }
 
-    private function current($s)
+    private function current($symbol)
     {
-        return $this->sym[0] == $s || $this->sym[0] == Tokens::T_EOF;
+        return $this->sym[0] == $symbol || $this->sym[0] == Tokens::T_EOF;
     }
 
     private function nextsym()
@@ -60,6 +60,12 @@ class Parser
 
     private function expression()
     {
+        if ($this->accept(Tokens::T_LPAREN)) {
+            $this->expression();
+            $this->expect(Tokens::T_RPAREN);
+            return;
+        }
+
         if ($this->literal()) {
             if ($this->accept(Tokens::T_ADD)) {
                 $this->expression();
@@ -70,12 +76,16 @@ class Parser
                 $this->expression();
                 return;
             }
-
-            $this->expect(Tokens::T_SEMICOLON);
             return;
         }
 
         throw new \Exception("expression: syntax error, unexpected token: " . $this->sym[1]);
+    }
+
+    private function expressionStatement()
+    {
+        $this->expression();
+        $this->expect(Tokens::T_SEMICOLON);
     }
 
     private function acceptProperty()
@@ -131,7 +141,7 @@ class Parser
                 $this->expect(Tokens::T_LPAREN);
                 $this->expect(Tokens::T_RPAREN);
                 $this->expect(Tokens::T_LBRACKET);
-                $this->expression();
+                $this->expressionStatement();
                 $this->expect(Tokens::T_RBRACKET);
                 return true;
             }
@@ -144,7 +154,7 @@ class Parser
                 $this->expect(Tokens::T_LPAREN);
                 $this->expect(Tokens::T_RPAREN);
                 $this->expect(Tokens::T_LBRACKET);
-                $this->expression();
+                $this->expressionStatement();
                 $this->expect(Tokens::T_RBRACKET);
                 return true;
             }
@@ -157,7 +167,7 @@ class Parser
                 $this->expect(Tokens::T_LPAREN);
                 $this->expect(Tokens::T_RPAREN);
                 $this->expect(Tokens::T_LBRACKET);
-                $this->expression();
+                $this->expressionStatement();
                 $this->expect(Tokens::T_RBRACKET);
                 return true;
             }
