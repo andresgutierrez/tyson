@@ -2,9 +2,9 @@
 
 require 'vendor/autoload.php';
 
-use Aker\Parser;
 use Aker\Tokens;
 use Aker\Tokenizer;
+use Aker\Generator;
 
 $rules = [
     Tokens::T_NUMBER     => '\d+',
@@ -29,24 +29,5 @@ $rules = [
     Tokens::T_SUBTRACT   => '\-',
 ];
 
-$program = "
-
-namespace X;
-
-class Y
-{
-    public R;
-
-    private X = 100;
-
-    private X;
-
-    public function __construct()
-    {
-        -3 + (3);
-    }
-}
-
-";
-
-(new Parser(new Tokenizer($rules, $program)))->parse();
+$generator = new Generator();
+$generator->load("ebnf.json");
