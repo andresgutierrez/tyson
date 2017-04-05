@@ -2,9 +2,9 @@
 
 require 'vendor/autoload.php';
 
-use Aker\Tokens;
-use Aker\Tokenizer;
-use Aker\Generator;
+use Tyson\Tokens;
+use Tyson\Tokenizer;
+use Tyson\Generator;
 
 $rules = [
     Tokens::T_NUMBER     => '\d+',

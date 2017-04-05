@@ -1,6 +1,6 @@
 <?php
 
-namespace Aker\Builder;
+namespace Tyson\Builder;
 
 class ClassMethod
 {

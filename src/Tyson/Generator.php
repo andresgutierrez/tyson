@@ -1,8 +1,8 @@
 <?php
 
-namespace Aker;
+namespace Tyson;
 
-use Aker\Builder\ClassDefinition;
+use Tyson\Builder\ClassDefinition;
 
 class Generator
 {
